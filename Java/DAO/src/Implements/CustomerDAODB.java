@@ -11,11 +11,13 @@ import java.util.*;
 public  class CustomerDAODB implements CustomerDAO {
     private Map<Long, Customer> mapCus = GlobalDB.getInstance()._Customers;
     public static CustomerDAODB _customerDAO;
+    
     public static CustomerDAODB getInstance() {
         if(_customerDAO==null)
             _customerDAO=new CustomerDAODB();
         return _customerDAO;
     }
+    
     public boolean isCustomerExistById(long id) {
         return mapCus.containsKey(id);
     }
@@ -25,7 +27,8 @@ public  class CustomerDAODB implements CustomerDAO {
                 .anyMatch(customer -> customer.getIdentity().equals(id));
 
     }
-  public   boolean isCustomerExistByIdentity(String email, String pass){
+    
+    public   boolean isCustomerExistByIdentity(String email, String pass){
         try{
             getCustomerByIdentity(email,pass);
         }
@@ -35,6 +38,7 @@ public  class CustomerDAODB implements CustomerDAO {
         }
         return true;
     }
+    
     public void addCustomer(Customer c) {
         mapCus.put(c.getId(), c);
     }
@@ -81,5 +85,6 @@ public  class CustomerDAODB implements CustomerDAO {
         return (ArrayList<Customer>) mapCus.values().stream().filter(c -> c.getLocalDate().equals(ld));
     }
 }
+
 
 
