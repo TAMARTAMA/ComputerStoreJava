@@ -12,19 +12,19 @@ import java.util.Set;
 public class ProductDAODB implements ProductDAO {
     private Set<Product> products = GlobalDB.getInstance()._Products;
     public static ProductDAODB _productDAO;
+    
     public static ProductDAODB getInstance() {
         if(_productDAO==null)
             _productDAO=new ProductDAODB();
         return _productDAO;
     }
+    
     public boolean isProductExistById(long id) {
         return products.stream().anyMatch(p -> (p.getId() == id));
     }
 
     public Product getProductById(long id) throws Exception {
-
         Product p=  products.stream().filter(pp -> (pp.getId() == id)).findFirst().get();
-        //TODO expitions
         if(p==null)
             throw new Exception("Product with ID " + id + " does not exist.");
         return  p;
@@ -33,6 +33,7 @@ public class ProductDAODB implements ProductDAO {
     public Set<Product> getAllProducts() throws Exception {
         return products;
     }
+    
     public void addProduct(Product p) {
         products.add(p);
     }
@@ -51,9 +52,6 @@ public class ProductDAODB implements ProductDAO {
        boolean i= products.remove(getProductById(id));
        if (!i)
            throw new Exception("Product with ID " + id + " does not exist.");
-//        if (!mapCus.containsKey(id)) {
-//            throw new Exception("Customer with ID " + id + " does not exist.");
-//        }
-//        mapCus.remove(id);
     }
 }
+
