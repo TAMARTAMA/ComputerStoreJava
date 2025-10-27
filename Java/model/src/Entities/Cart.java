@@ -31,9 +31,4 @@ public class Cart {
         arr.sort((o1,o2)->(int)(o1.getId()-o2.getId()));
     }
 }
-//new Comparator<Product>() {
-//            @Override
-//            public int compare(Product o1, Product o2) {
-//                return (int) (o1.getId()-o2.getId());
-//            }
-//        };
+
