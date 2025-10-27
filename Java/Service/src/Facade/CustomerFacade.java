@@ -48,7 +48,6 @@ public class CustomerFacade extends ClientFacade {
            boolean flag = false;
            long currentId = -1;
            int count = 0;
-           //TODO fix id
            PurchaseOrder po = new PurchaseOrder(100, customer);
            for (Product p : arr) {
                if (p.getId() != currentId) {
@@ -71,4 +70,5 @@ public class CustomerFacade extends ClientFacade {
            return po;
        }
 }
+
 
