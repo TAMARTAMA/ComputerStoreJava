@@ -60,36 +60,26 @@ public  class CustomerDAODB implements CustomerDAO {
         return mapCus.get(id);
     }
 
-//    public Customer getCustomerByIdentity(Customer.Identity identity) throws Exception {
-//        Optional<Customer> customer = mapCus.values().stream()
-//                .filter(c -> c.getIdentity().equals(identity))  // מסננים לקוחות שמתאימים
-//                .findFirst();
-//        if (customer.isEmpty()) {
-//            throw new Exception("Customer with identity " + identity + " not found.");
-//        }
-//        return customer.get();
-//
-//    }
-public Customer getCustomerByIdentity(String email, String pass) throws Exception {
-    Optional<Customer> customer = mapCus.values().stream()
-            .filter(c -> c.getIdentity().getPassword().equals(pass)
-                    &&c.getIdentity().getUserName().equals(email))  // מסננים לקוחות שמתאימים
-            .findFirst();
-    if (customer.isEmpty()) {
-        throw new Exception("Customer with identity " + email +" " +pass+ " not found.");
+    public Customer getCustomerByIdentity(String email, String pass) throws Exception {
+        Optional<Customer> customer = mapCus.values().stream()
+                .filter(c -> c.getIdentity().getPassword().equals(pass)
+                        &&c.getIdentity().getUserName().equals(email))  // מסננים לקוחות שמתאימים
+                .findFirst();
+        if (customer.isEmpty()) {
+            throw new Exception("Customer with identity " + email +" " +pass+ " not found.");
+        }
+        return customer.get();
+    
     }
-    return customer.get();
-
-}
 
     public HashMap<Long, Customer> getAllCustomers() throws Exception {
         return (HashMap<Long, Customer>) mapCus;
     }
 
-    //TODO if isnt good change!
     public ArrayList<Customer> getCustomersByDate(LocalDate ld) throws Exception {
 
         return (ArrayList<Customer>) mapCus.values().stream().filter(c -> c.getLocalDate().equals(ld));
     }
 }
+
 
