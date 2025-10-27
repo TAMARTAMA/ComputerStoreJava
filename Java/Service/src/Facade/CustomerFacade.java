@@ -23,11 +23,9 @@ public class CustomerFacade extends ClientFacade {
 
     public Customer getCustomerDetails()  {
         return customer;
-        //return customerDAODB.getCustomerById(customerId);
     }
 
     public void updateCustomer(Customer customer2) throws Exception {
-       // Customer c = getCustomerDetails();
         if (customer.getLocalDate() != customer2.getLocalDate())
             throw new Exception("Customer with ID " + customer2.getId() + " cant change date");
         customerDAODB.updateCustomer(customer2);
@@ -73,3 +71,4 @@ public class CustomerFacade extends ClientFacade {
            return po;
        }
 }
+
