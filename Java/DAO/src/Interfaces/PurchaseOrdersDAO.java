@@ -16,8 +16,6 @@ public interface PurchaseOrdersDAO {
     void updatePurchaseOrder(PurchaseOrder p) throws Exception;
     void removePurchaseOrder(long id)throws Exception;
     PurchaseOrder getPurchaseOrderById(long id)throws Exception;
-//    Customer getCustomerByIdentity(Customer.Identity id) throws Exception;
     List<PurchaseOrder> getAllPurchaseOrders()throws Exception;
-
-//    ArrayList<PurchaseOrder> getPurchaseOrdersByDate(LocalDate ld)throws Exception;
 }
+
