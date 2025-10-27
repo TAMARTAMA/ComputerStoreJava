@@ -12,10 +12,7 @@ import java.util.Set;
 import static Facade.Kind.Hardware;
 
 public class AdminFacade extends ClientFacade {
-    //Login() כניסה למערכת Administrator אין צורך לבדוק שם משתמש וסיסמא מול מסד הנתונים, אלא יש לבדוק אותם כ Hard Code
-    //השם משתמש יהיה תמיד admin@admin.com והסיסמא תהיה תמיד admin
     private long Tvach;
-
 
     public boolean Login(String email, String pass) {
         if ((email == "admin@admin.com"
@@ -48,23 +45,18 @@ public class AdminFacade extends ClientFacade {
 
     }
 
-    //•	החזרת כל הלקוחות שנולדו בתאריך מסוים, לבדוק טווח תקין.
     public ArrayList<Customer> getCustomersByDate(LocalDate localDate) throws Exception {
         return customerDAODB.getCustomersByDate(localDate);
     }
 
-    //•	מחיקת לקוח קיים.
     public void removeCustomer(long id) throws Exception {
         customerDAODB.removeCustomer(id);
     }
 
-    //            •	החזרת לקוח לפי קוד מסוים.
     public Customer getCustomerById(long id) throws Exception {
         return customerDAODB.getCustomerById(id);
     }
 
-    //•	המנהל שולט על המוצרים של המערכת. ניהול מלאי.
-//            •	הוספת מוצר – בונה מוצר חדש, מקבלת כפרמטר האם המוצר החדש יהיה Hardware  או Software  (מטיפוס enum) ואת הנתונים של המוצר החדש.
     public boolean isProductExistById(long id) {
         return productDAODB.isProductExistById(id);
     }
@@ -92,6 +84,6 @@ public class AdminFacade extends ClientFacade {
         public void removeProduct ( long id) throws Exception {
             productDAODB.removeProduct(id);
         }
-//            •	המנהל שולט על מצב ההזמנות, אילו הזמנות ניתן למחוק וכו'.
 
     }
+
