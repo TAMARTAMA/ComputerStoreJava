@@ -14,10 +14,7 @@ public interface CustomerDAO {
      void removeCustomer(long id)throws Exception;
      Customer getCustomerById(long id)throws Exception;
      Customer getCustomerByIdentity(String email, String pass) throws Exception;
-    HashMap<Long, Customer> getAllCustomers()throws Exception;
-    //TODO if isnt good change!
-    ArrayList<Customer> getCustomersByDate(LocalDate ld)throws Exception;
-
-
-
+     HashMap<Long, Customer> getAllCustomers()throws Exception;
+     ArrayList<Customer> getCustomersByDate(LocalDate ld)throws Exception;
 }
+
