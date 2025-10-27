@@ -47,8 +47,6 @@ public class Customer {
         this.address = address;
         this.id = id;
         this.identity=new Identity(username,password);
-//        this.identity.userName=username;
-//        this.identity.password=password;
         localDate=LocalDate.of(year,month,day);
     }
 
@@ -119,3 +117,4 @@ public class Customer {
                 '}';
     }
 }
+
