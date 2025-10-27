@@ -54,7 +54,6 @@ public class PurchaseOrder {
 
     }
 
-    //    public void addOrderItem(or)
     public LocalDate getOrderDate() {
         return orderDate;
     }
@@ -73,3 +72,4 @@ public class PurchaseOrder {
                 '}';
     }
 }
+
