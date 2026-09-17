@@ -6,11 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.testcontainers.mysql.MySQLContainer;
 
 @TestConfiguration(proxyBeanMethods = false)
-class MySqlContainerConfiguration {
+public class MySqlContainerConfiguration {
 
     @Bean
     @ServiceConnection
-    MySQLContainer mysqlContainer() {
+    public MySQLContainer mysqlContainer() {
         return new MySQLContainer("mysql:8.4");
     }
 }

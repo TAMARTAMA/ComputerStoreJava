@@ -19,6 +19,14 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+app:
+  security:
+    jwt:
+      # No fallback on purpose: the application must refuse to start without a real secret.
+      secret: ${JWT_SECRET:}
+      expiration: ${JWT_EXPIRATION:PT1H}
+      issuer: computer-store-api
+
 server:
   port: ${SERVER_PORT:8080}
 

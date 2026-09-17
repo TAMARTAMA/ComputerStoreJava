@@ -36,7 +36,18 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <!-- Nimbus JOSE via Spring Security's own JWT abstraction: version managed by the
+             Spring Security BOM and free of Jackson 2, which Boot 4 no longer puts on the
+             classpath. Only the JOSE library is used; no OAuth2 server is involved. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -81,6 +92,11 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
@@ -108,6 +124,18 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- The application refuses to start without JWT_SECRET, so the test JVM gets a
+                         throwaway one. This value is never a runtime fallback and must not be reused. -->
+                    <environmentVariables>
+                        <JWT_SECRET>test-only-jwt-secret-not-for-any-real-environment-0123456789abcdef</JWT_SECRET>
+                        <JWT_EXPIRATION>PT15M</JWT_EXPIRATION>
+                    </environmentVariables>
                 </configuration>
             </plugin>
             <plugin>
