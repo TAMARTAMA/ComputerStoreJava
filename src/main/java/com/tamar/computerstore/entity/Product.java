@@ -20,6 +20,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -29,6 +30,7 @@ import java.time.Instant;
         name = "products",
         uniqueConstraints = @UniqueConstraint(name = "uk_products_sku", columnNames = "sku")
 )
+@BatchSize(size = 32)
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

@@ -22,6 +22,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -63,6 +64,7 @@ public class PurchaseOrder {
     private Instant createdAt;
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 32)
     private List<@Valid OrderItem> items = new ArrayList<>();
 
     public PurchaseOrder(Customer customer) {

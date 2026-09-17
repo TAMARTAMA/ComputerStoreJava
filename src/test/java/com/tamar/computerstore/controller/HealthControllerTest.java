@@ -1,10 +1,14 @@
 package com.tamar.computerstore.controller;
 
+import com.tamar.computerstore.config.SecurityConfig;
 import com.tamar.computerstore.dto.HealthResponse;
+import com.tamar.computerstore.security.JwtService;
 import com.tamar.computerstore.service.HealthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -15,7 +19,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// The real security configuration is imported so the slice reflects the deployed rules rather
+// than Boot's default "authenticate everything" chain. The JWT collaborators are mocked because
+// this test never sends an Authorization header.
 @WebMvcTest(HealthController.class)
+@Import(SecurityConfig.class)
 class HealthControllerTest {
 
     @Autowired
@@ -23,6 +31,12 @@ class HealthControllerTest {
 
     @MockitoBean
     private HealthService healthService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserDetailsService userDetailsService;
 
     @Test
     void healthReturnsUpStatus() throws Exception {
