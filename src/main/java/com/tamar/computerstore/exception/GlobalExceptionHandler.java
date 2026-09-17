@@ -3,6 +3,7 @@ package com.tamar.computerstore.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -12,6 +13,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -46,6 +48,15 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Malformed request body", request);
     }
 
+    @ExceptionHandler({InvalidPageRequestException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiErrorResponse> handleBadRequest(RuntimeException exception,
+                                                             HttpServletRequest request) {
+        String message = exception instanceof MethodArgumentTypeMismatchException
+                ? "Invalid request parameter"
+                : exception.getMessage();
+        return build(HttpStatus.BAD_REQUEST, message, request);
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiErrorResponse> handleAuthentication(AuthenticationException exception,
                                                                  HttpServletRequest request) {
@@ -58,10 +69,25 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "You do not have permission to access this resource", request);
     }
 
-    @ExceptionHandler(DuplicateEmailException.class)
-    public ResponseEntity<ApiErrorResponse> handleDuplicateEmail(DuplicateEmailException exception,
-                                                                 HttpServletRequest request) {
-        return build(HttpStatus.CONFLICT, exception.getMessage(), request);
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleProductNotFound(ProductNotFoundException exception,
+                                                                  HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, exception.getMessage(), request);
+    }
+
+    @ExceptionHandler({
+            DuplicateEmailException.class,
+            DuplicateSkuException.class,
+            StaleProductVersionException.class,
+            ProductInUseException.class,
+            OptimisticLockingFailureException.class
+    })
+    public ResponseEntity<ApiErrorResponse> handleConflict(RuntimeException exception,
+                                                           HttpServletRequest request) {
+        String message = exception instanceof OptimisticLockingFailureException
+                ? "The resource was modified by another request; reload and retry"
+                : exception.getMessage();
+        return build(HttpStatus.CONFLICT, message, request);
     }
 
     @ExceptionHandler(Exception.class)

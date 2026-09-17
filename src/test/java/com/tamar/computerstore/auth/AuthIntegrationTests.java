@@ -109,6 +109,27 @@ class AuthIntegrationTests {
     }
 
     @Test
+    void registerRejectsPasswordThatExceeds72Utf8BytesEvenWhenUnder72Characters() throws Exception {
+        // 70 ASCII bytes + one 3-byte character = 73 UTF-8 bytes, but only 71 Java characters.
+        String tooManyBytes = "a".repeat(70) + "あ";
+        assertThat(tooManyBytes.length()).isLessThanOrEqualTo(72);
+        assertThat(tooManyBytes.getBytes(java.nio.charset.StandardCharsets.UTF_8)).hasSize(73);
+
+        String body = objectMapper.writeValueAsString(Map.of(
+                "email", "bytes@example.com",
+                "password", tooManyBytes,
+                "firstName", "Noa",
+                "lastName", "Levi"
+        ));
+
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.fieldErrors.password").value("Password must not exceed 72 UTF-8 bytes"));
+
+        assertThat(userAccountRepository.count()).isZero();
+    }
+
+    @Test
     void loginWithValidCredentialsReturnsASignedJwt() throws Exception {
         mockMvc.perform(register("dana@example.com")).andExpect(status().isCreated());
 

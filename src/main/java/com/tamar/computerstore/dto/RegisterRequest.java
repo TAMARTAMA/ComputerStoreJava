@@ -1,12 +1,14 @@
 package com.tamar.computerstore.dto;
 
+import com.tamar.computerstore.validation.MaxUtf8Bytes;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * @param password BCrypt only considers the first 72 bytes, so longer inputs are rejected
- *                 rather than silently truncated.
+ * @param password BCrypt only considers the first 72 UTF-8 bytes, so the upper bound is enforced
+ *                 on byte length (not Java character count) and longer inputs are rejected rather
+ *                 than silently truncated.
  */
 public record RegisterRequest(
 
@@ -16,7 +18,8 @@ public record RegisterRequest(
         String email,
 
         @NotBlank
-        @Size(min = 12, max = 72, message = "Password must be between 12 and 72 characters")
+        @Size(min = 12, message = "Password must be at least 12 characters")
+        @MaxUtf8Bytes(value = 72, message = "Password must not exceed 72 UTF-8 bytes")
         String password,
 
         @NotBlank

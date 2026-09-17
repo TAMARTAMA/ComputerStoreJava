@@ -1,6 +1,8 @@
 # Computer Store Management API
 
-Spring Boot backend for managing a computer store. The MySQL domain schema, the JPA persistence layer, and stateless JWT authentication are in place; the product and order endpoints are not built yet.
+Spring Boot backend for managing a computer store. The MySQL domain schema, JPA persistence,
+stateless JWT authentication, and the product catalog API are in place; order endpoints are not
+built yet.
 
 ## Stack
 
@@ -11,7 +13,7 @@ Spring Boot backend for managing a computer store. The MySQL domain schema, the 
 - Flyway
 - Spring Security 7 with HS256 JWTs (Nimbus JOSE via `spring-security-oauth2-jose`)
 - Lombok
-- Testcontainers (persistence and authentication tests)
+- Testcontainers (persistence, authentication, and product API tests)
 
 ## Prerequisites
 
@@ -117,6 +119,8 @@ then send the returned token as `Authorization: Bearer <token>` on every later r
 | `POST /api/auth/register` | public, creates a `CUSTOMER` account plus its customer profile |
 | `POST /api/auth/login` | public, returns a signed JWT |
 | `GET /api/auth/me` | requires a valid JWT |
+| `GET /api/products` and `GET /api/products/{id}` | authenticated (`CUSTOMER` or `ADMIN`) |
+| `POST` / `PUT` / `DELETE` `/api/products` | `ADMIN` only |
 | everything else under `/api/**` | requires a valid JWT |
 
 Register and receive a token:
@@ -136,6 +140,7 @@ curl http://localhost:8080/api/auth/me -H "Authorization: Bearer <accessToken>"
 Notes:
 
 - Passwords are stored only as BCrypt hashes (strength 12) and never appear in a response.
+- Password length is at least 12 characters and at most 72 UTF-8 bytes (BCrypt's input limit).
 - Login answers every failure with the same `401` body, so it cannot be used to discover which
   addresses are registered.
 - Unauthenticated and forbidden requests return JSON `401` and `403` envelopes, never HTML.
@@ -154,7 +159,44 @@ $env:LOCAL_ADMIN_PASSWORD = "<a local-only password>"
 ```
 
 The bootstrap is idempotent: it skips silently when either variable is empty and leaves an existing
-account with that email untouched.
+account with that email untouched. Log in afterward with those credentials to obtain an ADMIN JWT
+for product write operations.
+
+## Product catalog
+
+All product endpoints require `Authorization: Bearer <accessToken>`. Reads are available to both
+roles; creates, updates, and deletes are enforced for `ADMIN` in the service layer with
+`@PreAuthorize` (not only at the HTTP filter).
+
+| Method | Path | Roles |
+| --- | --- | --- |
+| `GET` | `/api/products` | `CUSTOMER`, `ADMIN` |
+| `GET` | `/api/products/{id}` | `CUSTOMER`, `ADMIN` |
+| `POST` | `/api/products` | `ADMIN` |
+| `PUT` | `/api/products/{id}` | `ADMIN` |
+| `DELETE` | `/api/products/{id}` | `ADMIN` |
+
+List products (optional `category`, case-insensitive `q` against name or SKU, pagination):
+
+```powershell
+curl "http://localhost:8080/api/products?category=HARDWARE&q=board&page=0&size=20" `
+  -H "Authorization: Bearer <accessToken>"
+```
+
+Default page size is 20; the maximum is 100. Results are sorted by `name` ascending, then `id`.
+
+Create a product as ADMIN:
+
+```powershell
+curl -X POST http://localhost:8080/api/products `
+  -H "Authorization: Bearer <adminAccessToken>" `
+  -H "Content-Type: application/json" `
+  -d '{"sku":"SKU-GPU-001","name":"Graphics Card","description":"High-end GPU","price":1299.99,"stockQuantity":7,"category":"HARDWARE"}'
+```
+
+Update requires the `version` value from the last read (optimistic locking). A stale `version`
+returns `409 Conflict`. Deleting a product that is still referenced by an order item also returns
+`409`.
 
 ## Domain schema
 
@@ -167,7 +209,7 @@ Flyway owns the schema (`V1__baseline.sql`, `V2__create_core_schema.sql`). The c
 - `order_items` — order lines referencing a product, with a positive quantity and a `DECIMAL` unit price
 
 Money is always `BigDecimal`/`DECIMAL`, timestamps are stored as UTC `DATETIME(6)`, and Spring Data JPA
-repositories exist for the four aggregates.
+repositories exist for the aggregates.
 
 ## Tests
 
@@ -175,9 +217,9 @@ repositories exist for the four aggregates.
 .\mvnw.cmd test
 ```
 
-Persistence and authentication tests start a throwaway MySQL 8.4 container via Testcontainers, so
-Docker must be running. They never touch the Compose database. Surefire injects a throwaway
-`JWT_SECRET` into the test JVM, so no local secret is needed to run the suite.
+Persistence, authentication, and product API tests start a throwaway MySQL 8.4 container via
+Testcontainers, so Docker must be running. They never touch the Compose database. Surefire injects
+a throwaway `JWT_SECRET` into the test JVM, so no local secret is needed to run the suite.
 
 ## Project layout
 
@@ -188,9 +230,11 @@ src/main/java/com/tamar/computerstore/
   dto/
   entity/
   exception/
+  mapper/
   repository/
   security/
   service/
+  validation/
 src/main/resources/
   application.yml
   db/migration/
