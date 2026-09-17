@@ -1,0 +1,2 @@
+-- Baseline migration for Computer Store Management API.
+-- Business schema will be added in later migrations.
