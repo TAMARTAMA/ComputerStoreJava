@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+.cursor
+.env
+.env.*
+!.env.example
+target
+*.md
+.mvn/wrapper/maven-wrapper.jar
+**/agent-transcripts
+**/.DS_Store
