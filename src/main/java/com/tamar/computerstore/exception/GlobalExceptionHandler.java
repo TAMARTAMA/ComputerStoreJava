@@ -48,7 +48,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Malformed request body", request);
     }
 
-    @ExceptionHandler({InvalidPageRequestException.class, MethodArgumentTypeMismatchException.class})
+    @ExceptionHandler({
+            InvalidPageRequestException.class,
+            InvalidOrderRequestException.class,
+            MethodArgumentTypeMismatchException.class
+    })
     public ResponseEntity<ApiErrorResponse> handleBadRequest(RuntimeException exception,
                                                              HttpServletRequest request) {
         String message = exception instanceof MethodArgumentTypeMismatchException
@@ -69,9 +73,9 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "You do not have permission to access this resource", request);
     }
 
-    @ExceptionHandler(ProductNotFoundException.class)
-    public ResponseEntity<ApiErrorResponse> handleProductNotFound(ProductNotFoundException exception,
-                                                                  HttpServletRequest request) {
+    @ExceptionHandler({ProductNotFoundException.class, OrderNotFoundException.class})
+    public ResponseEntity<ApiErrorResponse> handleNotFound(RuntimeException exception,
+                                                           HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, exception.getMessage(), request);
     }
 
@@ -80,6 +84,9 @@ public class GlobalExceptionHandler {
             DuplicateSkuException.class,
             StaleProductVersionException.class,
             ProductInUseException.class,
+            InsufficientStockException.class,
+            InvalidOrderStatusTransitionException.class,
+            InventoryConflictException.class,
             OptimisticLockingFailureException.class
     })
     public ResponseEntity<ApiErrorResponse> handleConflict(RuntimeException exception,

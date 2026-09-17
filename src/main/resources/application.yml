@@ -1,6 +1,10 @@
 spring:
   application:
     name: Computer Store Management API
+  # Load a local .env (KEY=VALUE) when present so JWT_SECRET and related vars work without
+  # manually exporting them. optional: keeps tests/CI starting when no .env exists.
+  config:
+    import: optional:file:.env[.properties]
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:computerstore}?createDatabaseIfNotExist=false&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: ${MYSQL_USER:computerstore}

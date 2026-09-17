@@ -1,8 +1,8 @@
 # Computer Store Management API
 
 Spring Boot backend for managing a computer store. The MySQL domain schema, JPA persistence,
-stateless JWT authentication, and the product catalog API are in place; order endpoints are not
-built yet.
+stateless JWT authentication, product catalog API, and transactional order processing are in
+place.
 
 ## Stack
 
@@ -13,7 +13,7 @@ built yet.
 - Flyway
 - Spring Security 7 with HS256 JWTs (Nimbus JOSE via `spring-security-oauth2-jose`)
 - Lombok
-- Testcontainers (persistence, authentication, and product API tests)
+- Testcontainers (persistence, authentication, product, and order API tests)
 
 ## Prerequisites
 
@@ -83,14 +83,16 @@ docker compose down
 
 ## Run the API
 
-`.env` is consumed by Docker Compose, not by Spring Boot, so export the application variables in
-the shell that starts the API:
+Spring Boot imports an optional local `.env` file (`spring.config.import: optional:file:.env[.properties]`),
+so `JWT_SECRET` and the other keys in `.env` are available without manually exporting them in the
+shell. Docker Compose continues to read the same `.env` for MySQL. Never commit a real `.env`.
 
 ```powershell
-$env:JWT_SECRET = "<the secret you generated>"
-$env:JWT_EXPIRATION = "PT1H"
 .\mvnw.cmd spring-boot:run
 ```
+
+You can still override any value by exporting an environment variable in the shell; process
+environment variables take precedence over the file.
 
 Health check (proves the server is up):
 
@@ -121,6 +123,7 @@ then send the returned token as `Authorization: Bearer <token>` on every later r
 | `GET /api/auth/me` | requires a valid JWT |
 | `GET /api/products` and `GET /api/products/{id}` | authenticated (`CUSTOMER` or `ADMIN`) |
 | `POST` / `PUT` / `DELETE` `/api/products` | `ADMIN` only |
+| Order endpoints | see [Orders](#orders) |
 | everything else under `/api/**` | requires a valid JWT |
 
 Register and receive a token:
@@ -150,17 +153,19 @@ Notes:
 ### Development admin account
 
 There is no admin in any migration and no admin password in the repository. To create one locally,
-run the application with the `local` profile and supply both variables:
+run the application with the `local` profile and supply both variables (via `.env` or the shell):
 
 ```powershell
-$env:LOCAL_ADMIN_EMAIL = "admin@example.com"
-$env:LOCAL_ADMIN_PASSWORD = "<a local-only password>"
+# In .env (recommended):
+# LOCAL_ADMIN_EMAIL=admin@example.com
+# LOCAL_ADMIN_PASSWORD=<a local-only password>
+
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
 ```
 
 The bootstrap is idempotent: it skips silently when either variable is empty and leaves an existing
 account with that email untouched. Log in afterward with those credentials to obtain an ADMIN JWT
-for product write operations.
+for product write operations and order status updates.
 
 ## Product catalog
 
@@ -198,6 +203,94 @@ Update requires the `version` value from the last read (optimistic locking). A s
 returns `409 Conflict`. Deleting a product that is still referenced by an order item also returns
 `409`.
 
+## Orders
+
+Order placement is a single `@Transactional` operation: validate products and stock, calculate
+line prices and totals from the current server-side `Product.price`, create the order and items,
+decrement stock, and save. Clients never supply price, total, customer id, or status. Concurrent
+stock updates rely on Product `@Version` optimistic locking and map to HTTP `409`.
+
+### Endpoints and authorization
+
+| Method | Path | Roles | Notes |
+| --- | --- | --- | --- |
+| `POST` | `/api/orders` | `CUSTOMER` | Body: non-empty `{ "items": [ { "productId", "quantity" } ] }` |
+| `GET` | `/api/orders/me` | `CUSTOMER` | Current customer's orders, newest first, paginated |
+| `GET` | `/api/orders/{id}` | `CUSTOMER`, `ADMIN` | Customer may read only own order; another customer's order returns `404` |
+| `GET` | `/api/orders` | `ADMIN` | All orders, newest first; optional `status` filter |
+| `PATCH` | `/api/orders/{id}/status` | `ADMIN` | Body: `{ "status": "COMPLETED" \| "CANCELLED" }` |
+
+There is no order deletion endpoint.
+
+### Lifecycle
+
+- New orders start as `PENDING`.
+- Allowed transitions only: `PENDING -> COMPLETED`, `PENDING -> CANCELLED`.
+- Any other transition returns HTTP `409`.
+- Cancelling a `PENDING` order restores stock once in the same transaction.
+- Completing an order does not change stock again (stock was already reserved at placement).
+
+### Example: place an order
+
+```powershell
+curl -X POST http://localhost:8080/api/orders `
+  -H "Authorization: Bearer <customerAccessToken>" `
+  -H "Content-Type: application/json" `
+  -d '{"items":[{"productId":1,"quantity":2}]}'
+```
+
+### Example: admin status update
+
+```powershell
+curl -X PATCH http://localhost:8080/api/orders/1/status `
+  -H "Authorization: Bearer <adminAccessToken>" `
+  -H "Content-Type: application/json" `
+  -d '{"status":"COMPLETED"}'
+```
+
+### Order error mapping
+
+| Situation | HTTP |
+| --- | --- |
+| Order not found / another customer's order | `404` |
+| Insufficient stock | `409` |
+| Invalid status transition | `409` |
+| Optimistic inventory conflict | `409` |
+| Invalid order request (empty items, duplicate product ids, non-positive qty) | `400` |
+
+## Local fictional demo data
+
+Demo seeding is **off by default** and never runs in tests, CI, the default profile, or production.
+It activates only when **all** of the following are true:
+
+1. Spring profile `local` is active
+2. `APP_DEMO_DATA_ENABLED=true`
+3. `DEMO_CUSTOMER_PASSWORD` is set to a strong password (at least 12 characters)
+
+All seeded names, emails, phones, and addresses are **fictional** reserved demo values (for example
+`noa.levi@example.test`, `+972-50-555-0101`). They are not real people or credentials.
+
+Set these in `.env` (example):
+
+```env
+APP_DEMO_DATA_ENABLED=true
+DEMO_CUSTOMER_PASSWORD=<choose-a-strong-local-only-password>
+LOCAL_ADMIN_EMAIL=admin@example.com
+LOCAL_ADMIN_PASSWORD=<choose-a-strong-local-only-password>
+```
+
+Then start with the local profile:
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=local"
+```
+
+What gets seeded (idempotent — safe to re-run; existing SKUs, emails, and demo orders are left alone):
+
+- About 18 computer-store products (`DEMO-*` SKUs) across hardware and software
+- Two fictional CUSTOMER accounts (`noa.levi@example.test`, `yonatan.cohen@example.test`) using `DEMO_CUSTOMER_PASSWORD`
+- Several historical orders created through the real order service and status transitions, including at least one `COMPLETED`, one `PENDING`, and one `CANCELLED` (status changes require the local admin bootstrap)
+
 ## Domain schema
 
 Flyway owns the schema (`V1__baseline.sql`, `V2__create_core_schema.sql`). The core tables are:
@@ -214,10 +307,10 @@ repositories exist for the aggregates.
 ## Tests
 
 ```powershell
-.\mvnw.cmd test
+.\mvnw.cmd clean verify
 ```
 
-Persistence, authentication, and product API tests start a throwaway MySQL 8.4 container via
+Persistence, authentication, product, and order API tests start a throwaway MySQL 8.4 container via
 Testcontainers, so Docker must be running. They never touch the Compose database. Surefire injects
 a throwaway `JWT_SECRET` into the test JVM, so no local secret is needed to run the suite.
 
@@ -247,8 +340,11 @@ pom.xml
 
 - MySQL host, port, database, username, and password are read from environment variables (`MYSQL_*`).
 - `docker-compose.yml` supplies local defaults via `.env` / Compose substitution.
+- Spring Boot also imports `.env` when present (`optional:file:.env[.properties]`).
 - `.env` is gitignored — do not commit real secrets.
 - Hibernate `ddl-auto` is `none`; Flyway owns schema evolution.
 - `JWT_SECRET` and `JWT_EXPIRATION` are the only sources of JWT configuration; `JWT_SECRET` has no
   default and is validated at startup.
 - `LOCAL_ADMIN_EMAIL` and `LOCAL_ADMIN_PASSWORD` apply only under the `local` profile.
+- `APP_DEMO_DATA_ENABLED` and `DEMO_CUSTOMER_PASSWORD` apply only under the `local` profile with the
+  demo flag explicitly set to `true`.
